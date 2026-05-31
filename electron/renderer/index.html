@@ -57,7 +57,11 @@
       <div class="modal-panel wide">
         <h1>Налаштування</h1>
         <label class="field">
-          <span>Папка Minecraft</span>
+          <span>Куди качати</span>
+          <input id="installDirInput" readonly />
+        </label>
+        <label class="field">
+          <span>Папка гри</span>
           <input id="gameRootInput" readonly />
         </label>
         <label class="field">
@@ -68,9 +72,12 @@
           <input id="closeAfterLaunchInput" type="checkbox" />
           <span>Закривати лаунчер після запуску гри</span>
         </label>
-        <div class="modal-actions triple">
-          <button class="secondary-button" id="chooseRootButton" type="button">Обрати</button>
-          <button class="secondary-button" id="openRootButton" type="button">Відкрити</button>
+        <div class="progress hidden" id="installProgress">
+          <span id="installProgressText">Скачування...</span>
+          <div><i id="installProgressBar"></i></div>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-button" id="chooseInstallButton" type="button">Куди</button>
           <button class="primary-button" id="saveSettingsButton" type="button">OK</button>
         </div>
       </div>

@@ -36,13 +36,20 @@ npm run dist:win
 
 The generated launcher file is named `crackedpulse.exe`.
 
-## Game Folder
+## Game Download
 
-The launcher expects a run-only Minecraft folder with `loader-1.21.4.ps1`, `game/`, and `launcher/`.
-By default it looks for:
+When `Play` is pressed, the launcher checks the selected install folder.
+If the required files are missing, it downloads `CrackedPulse.zip` from GitHub Releases automatically:
 
 ```text
-C:\Users\vital\Downloads\CrackedPulse
+https://github.com/Tarasproger-ui/CrackedPulse-launcher-site/releases/latest/download/CrackedPulse.zip
+```
+
+The zip must contain `loader-1.21.4.ps1`, `game/`, and `launcher/`.
+The launcher installs it as a folder named:
+
+```text
+CrackedPulse
 ```
 
 You can change that path in launcher settings.

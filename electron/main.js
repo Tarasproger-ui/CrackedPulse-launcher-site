@@ -1,14 +1,19 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const { spawn } = require('child_process');
+const extractZip = require('extract-zip');
 
 const defaultNick = 'YTArturWayUa';
 const version = '1.21.4';
 const iconPath = path.join(__dirname, 'assets', 'pulse-icon.png');
+const defaultDownloadUrl = 'https://github.com/Tarasproger-ui/CrackedPulse-launcher-site/releases/latest/download/CrackedPulse.zip';
 
 let mainWindow;
 let gameProcess;
+let installInProgress = false;
 
 app.setAppUserModelId('ua.crackedpulse.launcher');
 
@@ -16,8 +21,16 @@ function getSettingsPath() {
   return path.join(app.getPath('userData'), 'settings.json');
 }
 
-function defaultGameRoot() {
-  return path.join(app.getPath('downloads'), 'CrackedPulse');
+function getGameRootFromInstallDir(installDir) {
+  if (path.basename(installDir).toLowerCase() === 'crackedpulse') {
+    return installDir;
+  }
+
+  return path.join(installDir, 'CrackedPulse');
+}
+
+function defaultInstallDir() {
+  return app.getPath('downloads');
 }
 
 function sanitizeNick(value) {
@@ -37,9 +50,13 @@ function readJson(file, fallback) {
 
 function readSettings() {
   const settings = readJson(getSettingsPath(), {});
+  const installDir = settings.installDir || defaultInstallDir();
+  const gameRoot = settings.gameRoot || getGameRootFromInstallDir(installDir);
   return {
     nickname: sanitizeNick(settings.nickname),
-    gameRoot: settings.gameRoot || defaultGameRoot(),
+    installDir,
+    gameRoot,
+    downloadUrl: settings.downloadUrl || defaultDownloadUrl,
     memoryMb: Number(settings.memoryMb) || 4096,
     closeAfterLaunch: Boolean(settings.closeAfterLaunch)
   };
@@ -47,9 +64,14 @@ function readSettings() {
 
 function saveSettings(nextSettings) {
   const current = readSettings();
+  const installDir = nextSettings.installDir ?? current.installDir;
+  const gameRoot = nextSettings.gameRoot ?? getGameRootFromInstallDir(installDir);
   const settings = {
     ...current,
     ...nextSettings,
+    installDir,
+    gameRoot,
+    downloadUrl: nextSettings.downloadUrl ?? current.downloadUrl,
     nickname: sanitizeNick(nextSettings.nickname ?? current.nickname),
     memoryMb: Number(nextSettings.memoryMb ?? current.memoryMb) || 4096,
     closeAfterLaunch: Boolean(nextSettings.closeAfterLaunch ?? current.closeAfterLaunch)
@@ -72,10 +94,110 @@ function isValidGameRoot(gameRoot) {
   return fs.existsSync(paths.loader) && fs.existsSync(path.join(gameRoot, 'game'));
 }
 
+function sendInstallProgress(payload) {
+  mainWindow?.webContents.send('install:progress', payload);
+}
+
+function downloadFile(url, outputPath, redirectCount = 0) {
+  if (redirectCount > 5) {
+    return Promise.reject(new Error('Забагато перенаправлень завантаження.'));
+  }
+
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith('https:') ? https : http;
+    const request = client.get(url, (response) => {
+      if ([301, 302, 303, 307, 308].includes(response.statusCode) && response.headers.location) {
+        const nextUrl = new URL(response.headers.location, url).toString();
+        response.resume();
+        downloadFile(nextUrl, outputPath, redirectCount + 1).then(resolve, reject);
+        return;
+      }
+
+      if (response.statusCode !== 200) {
+        response.resume();
+        reject(new Error(`Не вдалося скачати Minecraft: HTTP ${response.statusCode}`));
+        return;
+      }
+
+      const total = Number(response.headers['content-length']) || 0;
+      let downloaded = 0;
+      const file = fs.createWriteStream(outputPath);
+
+      response.on('data', (chunk) => {
+        downloaded += chunk.length;
+        sendInstallProgress({
+          phase: 'download',
+          percent: total ? Math.round((downloaded / total) * 100) : 0,
+          message: total ? `Скачування ${Math.round((downloaded / total) * 100)}%` : 'Скачування...'
+        });
+      });
+
+      response.pipe(file);
+      file.on('finish', () => file.close(resolve));
+      file.on('error', reject);
+    });
+
+    request.on('error', reject);
+  });
+}
+
+async function installGame() {
+  if (installInProgress) {
+    return { ok: false, message: 'Minecraft вже скачується.' };
+  }
+
+  installInProgress = true;
+  const settings = readSettings();
+  const tempZip = path.join(app.getPath('temp'), `CrackedPulse-${Date.now()}.zip`);
+  const extractDir = path.join(app.getPath('temp'), `CrackedPulse-install-${Date.now()}`);
+
+  try {
+    fs.mkdirSync(settings.installDir, { recursive: true });
+    fs.rmSync(extractDir, { recursive: true, force: true });
+    fs.mkdirSync(extractDir, { recursive: true });
+
+    sendInstallProgress({ phase: 'download', percent: 0, message: 'Починаю скачування...' });
+    await downloadFile(settings.downloadUrl, tempZip);
+
+    sendInstallProgress({ phase: 'extract', percent: 100, message: 'Розпаковую...' });
+    await extractZip(tempZip, { dir: extractDir });
+
+    const extractedRoot = path.join(extractDir, 'CrackedPulse');
+    const sourceRoot = fs.existsSync(extractedRoot) ? extractedRoot : extractDir;
+    if (!isValidGameRoot(sourceRoot)) {
+      throw new Error('Архів має містити loader-1.21.4.ps1 і папку game.');
+    }
+
+    fs.rmSync(settings.gameRoot, { recursive: true, force: true });
+    fs.mkdirSync(path.dirname(settings.gameRoot), { recursive: true });
+    fs.renameSync(sourceRoot, settings.gameRoot);
+
+    const saved = saveSettings({
+      installDir: settings.installDir,
+      gameRoot: settings.gameRoot
+    });
+
+    sendInstallProgress({ phase: 'done', percent: 100, message: 'Minecraft встановлено.' });
+    return {
+      ok: true,
+      message: 'Minecraft встановлено.',
+      ...saved,
+      validGameRoot: isValidGameRoot(saved.gameRoot)
+    };
+  } catch (error) {
+    sendInstallProgress({ phase: 'error', percent: 0, message: error.message });
+    return { ok: false, message: error.message };
+  } finally {
+    installInProgress = false;
+    fs.rmSync(tempZip, { force: true });
+    fs.rmSync(extractDir, { recursive: true, force: true });
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 410,
-    height: 540,
+    width: 430,
+    height: 580,
     resizable: false,
     frame: false,
     transparent: true,
@@ -115,17 +237,21 @@ ipcMain.handle('app:save-settings', (_event, settings) => {
   };
 });
 
-ipcMain.handle('app:choose-game-root', async () => {
+ipcMain.handle('app:choose-install-dir', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Вибери папку CrackedPulse',
-    properties: ['openDirectory']
+    title: 'Вибери куди скачати CrackedPulse',
+    properties: ['openDirectory', 'createDirectory']
   });
 
   if (result.canceled || !result.filePaths[0]) {
     return null;
   }
 
-  const saved = saveSettings({ gameRoot: result.filePaths[0] });
+  const installDir = result.filePaths[0];
+  const saved = saveSettings({
+    installDir,
+    gameRoot: getGameRootFromInstallDir(installDir)
+  });
   return {
     ...saved,
     validGameRoot: isValidGameRoot(saved.gameRoot)
@@ -140,17 +266,22 @@ ipcMain.handle('app:open-game-root', async () => {
 ipcMain.handle('window:minimize', () => mainWindow?.minimize());
 ipcMain.handle('window:close', () => mainWindow?.close());
 
-ipcMain.handle('game:launch', (_event, nickname) => {
+ipcMain.handle('game:launch', async (_event, nickname) => {
   if (gameProcess && !gameProcess.killed) {
     return { ok: false, message: 'Minecraft вже запускається.' };
   }
 
-  const settings = saveSettings({ nickname });
-  const paths = getRunOnlyPaths(settings.gameRoot);
+  let settings = saveSettings({ nickname });
 
   if (!isValidGameRoot(settings.gameRoot)) {
-    return { ok: false, message: 'Вибери правильну папку CrackedPulse у налаштуваннях.' };
+    const installResult = await installGame();
+    if (!installResult.ok) {
+      return installResult;
+    }
+    settings = saveSettings({ nickname });
   }
+
+  const paths = getRunOnlyPaths(settings.gameRoot);
 
   fs.mkdirSync(paths.launcherDir, { recursive: true });
   fs.writeFileSync(paths.nicknameFile, settings.nickname, 'utf8');
@@ -195,5 +326,14 @@ ipcMain.handle('game:launch', (_event, nickname) => {
     mainWindow?.hide();
   }
 
-  return { ok: true, message: `Запускаю як ${settings.nickname}...`, nickname: settings.nickname };
+  return {
+    ok: true,
+    message: `Запускаю як ${settings.nickname}...`,
+    nickname: settings.nickname,
+    installDir: settings.installDir,
+    gameRoot: settings.gameRoot,
+    memoryMb: settings.memoryMb,
+    closeAfterLaunch: settings.closeAfterLaunch,
+    validGameRoot: true
+  };
 });

@@ -39,5 +39,8 @@
   "devDependencies": {
     "electron": "^31.7.7",
     "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "extract-zip": "^2.0.1"
   }
 }
