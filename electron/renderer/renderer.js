@@ -6,6 +6,7 @@ const nickModal = document.querySelector('#nickModal');
 const settingsModal = document.querySelector('#settingsModal');
 const gameRootInput = document.querySelector('#gameRootInput');
 const memoryInput = document.querySelector('#memoryInput');
+const closeAfterLaunchInput = document.querySelector('#closeAfterLaunchInput');
 const memoryText = document.querySelector('#memoryText');
 const folderState = document.querySelector('#folderState');
 
@@ -13,16 +14,12 @@ let state = {
   nickname: 'YTArturWayUa',
   gameRoot: '',
   memoryMb: 4096,
-  validGameRoot: false
+  validGameRoot: false,
+  closeAfterLaunch: false
 };
 
 function cleanNick(value) {
   return String(value || '').trim().replace(/[^A-Za-z0-9_]/g, '').slice(0, 16) || 'YTArturWayUa';
-}
-
-function shortPath(value) {
-  if (!value) return 'Не вибрано';
-  return value.length > 28 ? `...${value.slice(-25)}` : value;
 }
 
 function setStatus(message, isError = false) {
@@ -37,6 +34,7 @@ function render(nextState) {
   nicknameInput.value = state.nickname;
   gameRootInput.value = state.gameRoot || '';
   memoryInput.value = state.memoryMb;
+  closeAfterLaunchInput.checked = Boolean(state.closeAfterLaunch);
   memoryText.textContent = `${state.memoryMb} MB`;
   folderState.textContent = state.validGameRoot ? 'Готово' : 'Перевір папку';
   folderState.classList.toggle('bad', !state.validGameRoot);
@@ -63,11 +61,12 @@ document.querySelector('#settingsButton').addEventListener('click', () => showMo
 document.querySelector('#saveSettingsButton').addEventListener('click', async () => {
   const saved = await window.crackedPulse.saveSettings({
     gameRoot: gameRootInput.value,
-    memoryMb: Number(memoryInput.value)
+    memoryMb: Number(memoryInput.value),
+    closeAfterLaunch: closeAfterLaunchInput.checked
   });
   render(saved);
   hideModal(settingsModal);
-  setStatus(saved.validGameRoot ? 'Налаштування збережено' : 'Папка не схожа на CrackedPulse-RunOnly', !saved.validGameRoot);
+  setStatus(saved.validGameRoot ? 'Налаштування збережено' : 'Папка не схожа на CrackedPulse', !saved.validGameRoot);
 });
 
 document.querySelector('#chooseRootButton').addEventListener('click', async () => {

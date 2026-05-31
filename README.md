@@ -42,7 +42,7 @@ The launcher expects a run-only Minecraft folder with `loader-1.21.4.ps1`, `game
 By default it looks for:
 
 ```text
-C:\Users\vital\Downloads\CrackedPulse-RunOnly
+C:\Users\vital\Downloads\CrackedPulse
 ```
 
 You can change that path in launcher settings.

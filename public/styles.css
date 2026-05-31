@@ -39,11 +39,9 @@ body {
 }
 
 .mark {
-  width: 30px;
-  height: 20px;
-  border-left: 3px solid #7a55ff;
-  border-top: 3px solid #7a55ff;
-  transform: skewX(-18deg);
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 h1 {

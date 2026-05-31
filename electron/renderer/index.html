@@ -9,7 +9,10 @@
   <body>
     <main class="launcher">
       <header class="titlebar">
-        <div class="brand"><span class="pulse-mark"></span><span>CrackedPulse</span></div>
+        <div class="brand">
+          <img class="pulse-mark" src="../assets/pulse-icon.png" alt="" />
+          <span>CrackedPulse</span>
+        </div>
         <div class="window-actions">
           <button class="icon-button" id="settingsButton" aria-label="Налаштування">⚙</button>
           <button class="icon-button" id="minimizeButton" aria-label="Згорнути">-</button>
@@ -60,6 +63,10 @@
         <label class="field">
           <span>RAM, MB</span>
           <input id="memoryInput" type="number" min="1024" max="16384" step="512" />
+        </label>
+        <label class="check-field">
+          <input id="closeAfterLaunchInput" type="checkbox" />
+          <span>Закривати лаунчер після запуску гри</span>
         </label>
         <div class="modal-actions triple">
           <button class="secondary-button" id="chooseRootButton" type="button">Обрати</button>

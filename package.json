@@ -15,6 +15,7 @@
   "build": {
     "appId": "ua.crackedpulse.launcher",
     "productName": "CrackedPulse",
+    "icon": "build/icon.ico",
     "asar": true,
     "files": [
       "electron/**/*",
@@ -26,6 +27,13 @@
         "portable"
       ],
       "artifactName": "crackedpulse.exe"
+    },
+    "nsis": {
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "portable": {
+      "unpackDirName": "CrackedPulse"
     }
   },
   "devDependencies": {

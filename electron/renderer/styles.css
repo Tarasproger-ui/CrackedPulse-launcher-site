@@ -53,11 +53,9 @@ input {
 }
 
 .pulse-mark {
-  width: 26px;
-  height: 18px;
-  border-left: 3px solid #714dff;
-  border-top: 3px solid #714dff;
-  transform: skewX(-18deg);
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .window-actions {
@@ -213,6 +211,23 @@ input {
   margin-bottom: 14px;
   color: #9d96bb;
   font-size: 13px;
+}
+
+.check-field {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: #c8c1dc;
+  font-size: 13px;
+}
+
+.check-field input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #7a55ff;
 }
 
 input {

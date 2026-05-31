@@ -5,16 +5,19 @@ const { spawn } = require('child_process');
 
 const defaultNick = 'YTArturWayUa';
 const version = '1.21.4';
+const iconPath = path.join(__dirname, 'assets', 'pulse-icon.png');
 
 let mainWindow;
 let gameProcess;
+
+app.setAppUserModelId('ua.crackedpulse.launcher');
 
 function getSettingsPath() {
   return path.join(app.getPath('userData'), 'settings.json');
 }
 
 function defaultGameRoot() {
-  return path.join(app.getPath('downloads'), 'CrackedPulse-RunOnly');
+  return path.join(app.getPath('downloads'), 'CrackedPulse');
 }
 
 function sanitizeNick(value) {
@@ -37,7 +40,8 @@ function readSettings() {
   return {
     nickname: sanitizeNick(settings.nickname),
     gameRoot: settings.gameRoot || defaultGameRoot(),
-    memoryMb: Number(settings.memoryMb) || 4096
+    memoryMb: Number(settings.memoryMb) || 4096,
+    closeAfterLaunch: Boolean(settings.closeAfterLaunch)
   };
 }
 
@@ -47,7 +51,8 @@ function saveSettings(nextSettings) {
     ...current,
     ...nextSettings,
     nickname: sanitizeNick(nextSettings.nickname ?? current.nickname),
-    memoryMb: Number(nextSettings.memoryMb ?? current.memoryMb) || 4096
+    memoryMb: Number(nextSettings.memoryMb ?? current.memoryMb) || 4096,
+    closeAfterLaunch: Boolean(nextSettings.closeAfterLaunch ?? current.closeAfterLaunch)
   };
   fs.mkdirSync(path.dirname(getSettingsPath()), { recursive: true });
   fs.writeFileSync(getSettingsPath(), JSON.stringify(settings, null, 2), 'utf8');
@@ -70,10 +75,11 @@ function isValidGameRoot(gameRoot) {
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 410,
-    height: 520,
+    height: 540,
     resizable: false,
     frame: false,
     transparent: true,
+    icon: iconPath,
     backgroundColor: '#00000000',
     show: false,
     webPreferences: {
@@ -111,7 +117,7 @@ ipcMain.handle('app:save-settings', (_event, settings) => {
 
 ipcMain.handle('app:choose-game-root', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Вибери папку CrackedPulse-RunOnly',
+    title: 'Вибери папку CrackedPulse',
     properties: ['openDirectory']
   });
 
@@ -143,7 +149,7 @@ ipcMain.handle('game:launch', (_event, nickname) => {
   const paths = getRunOnlyPaths(settings.gameRoot);
 
   if (!isValidGameRoot(settings.gameRoot)) {
-    return { ok: false, message: 'Вибери правильну папку CrackedPulse-RunOnly у налаштуваннях.' };
+    return { ok: false, message: 'Вибери правильну папку CrackedPulse у налаштуваннях.' };
   }
 
   fs.mkdirSync(paths.launcherDir, { recursive: true });
@@ -176,9 +182,18 @@ ipcMain.handle('game:launch', (_event, nickname) => {
 
   gameProcess.on('exit', () => {
     gameProcess = undefined;
+    if (readSettings().closeAfterLaunch && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
     mainWindow?.webContents.send('game:stopped');
   });
 
   gameProcess.unref();
+
+  if (settings.closeAfterLaunch) {
+    mainWindow?.hide();
+  }
+
   return { ok: true, message: `Запускаю як ${settings.nickname}...`, nickname: settings.nickname };
 });
