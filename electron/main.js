@@ -115,6 +115,10 @@ function downloadFile(url, outputPath, redirectCount = 0) {
 
       if (response.statusCode !== 200) {
         response.resume();
+        if (response.statusCode === 404) {
+          reject(new Error('Не знайдено CrackedPulse.zip у GitHub Release. Завантаж CrackedPulse.zip у latest release з точно такою назвою файлу.'));
+          return;
+        }
         reject(new Error(`Не вдалося скачати Minecraft: HTTP ${response.statusCode}`));
         return;
       }
