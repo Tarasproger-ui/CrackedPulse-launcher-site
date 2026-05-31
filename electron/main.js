@@ -94,6 +94,22 @@ function isValidGameRoot(gameRoot) {
   return fs.existsSync(paths.loader) && fs.existsSync(path.join(gameRoot, 'game'));
 }
 
+function moveDirectory(source, target) {
+  fs.rmSync(target, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+
+  try {
+    fs.renameSync(source, target);
+  } catch (error) {
+    if (error.code !== 'EXDEV') {
+      throw error;
+    }
+
+    fs.cpSync(source, target, { recursive: true });
+    fs.rmSync(source, { recursive: true, force: true });
+  }
+}
+
 function sendInstallProgress(payload) {
   mainWindow?.webContents.send('install:progress', payload);
 }
@@ -172,9 +188,7 @@ async function installGame() {
       throw new Error('Архів має містити loader-1.21.4.ps1 і папку game.');
     }
 
-    fs.rmSync(settings.gameRoot, { recursive: true, force: true });
-    fs.mkdirSync(path.dirname(settings.gameRoot), { recursive: true });
-    fs.renameSync(sourceRoot, settings.gameRoot);
+    moveDirectory(sourceRoot, settings.gameRoot);
 
     const saved = saveSettings({
       installDir: settings.installDir,
