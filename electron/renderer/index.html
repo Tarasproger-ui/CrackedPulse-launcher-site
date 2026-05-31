@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CrackedPulse</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="launcher">
+      <header class="titlebar">
+        <div class="brand"><span class="pulse-mark"></span><span>CrackedPulse</span></div>
+        <div class="window-actions">
+          <button class="icon-button" id="settingsButton" aria-label="Налаштування">⚙</button>
+          <button class="icon-button" id="minimizeButton" aria-label="Згорнути">-</button>
+          <button class="icon-button" id="closeButton" aria-label="Закрити">x</button>
+        </div>
+      </header>
+
+      <section class="profile">
+        <p class="hello">Привіт, <span id="nicknameText">YTArturWayUa</span></p>
+        <button class="account-button" id="accountButton" type="button">
+          <span class="account-icon"></span>
+          <span>Змінити акаунт</span>
+        </button>
+      </section>
+
+      <section class="details">
+        <div class="row"><span>Версія</span><strong>1.21.4</strong></div>
+        <div class="row"><span>RAM</span><strong id="memoryText">4096 MB</strong></div>
+        <div class="row"><span>Папка</span><strong id="folderState">Не вибрано</strong></div>
+      </section>
+
+      <p class="status" id="statusText">Готово до запуску</p>
+
+      <footer class="actions">
+        <button class="primary-button" id="playButton" type="button">Грати</button>
+        <button class="secondary-button" id="nickButton" type="button">Нік</button>
+      </footer>
+    </main>
+
+    <div class="modal hidden" id="nickModal" aria-hidden="true">
+      <div class="modal-panel">
+        <h1>Нікнейм</h1>
+        <input id="nicknameInput" maxlength="16" autocomplete="off" spellcheck="false" />
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancelNickButton" type="button">Назад</button>
+          <button class="primary-button" id="saveNickButton" type="button">Зберегти</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal hidden" id="settingsModal" aria-hidden="true">
+      <div class="modal-panel wide">
+        <h1>Налаштування</h1>
+        <label class="field">
+          <span>Папка Minecraft</span>
+          <input id="gameRootInput" readonly />
+        </label>
+        <label class="field">
+          <span>RAM, MB</span>
+          <input id="memoryInput" type="number" min="1024" max="16384" step="512" />
+        </label>
+        <div class="modal-actions triple">
+          <button class="secondary-button" id="chooseRootButton" type="button">Обрати</button>
+          <button class="secondary-button" id="openRootButton" type="button">Відкрити</button>
+          <button class="primary-button" id="saveSettingsButton" type="button">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

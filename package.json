@@ -1,0 +1,35 @@
+{
+  "name": "crackedpulse-launcher-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CrackedPulse landing page and Electron launcher.",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build": "node scripts/build-site.js",
+    "build:site": "node scripts/build-site.js",
+    "dist": "electron-builder --win portable --x64",
+    "dist:win": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "ua.crackedpulse.launcher",
+    "productName": "CrackedPulse",
+    "asar": true,
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        "portable"
+      ],
+      "artifactName": "crackedpulse.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  }
+}
